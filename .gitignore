@@ -1,0 +1,13 @@
+target/
+.m2/
+.idea/
+*.iml
+.env
+.env.*
+!.env.example
+application-local.*
+data/
+artifacts/
+*.log
+*.mv.db
+*.trace.db
