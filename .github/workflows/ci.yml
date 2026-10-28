@@ -28,3 +28,6 @@ jobs:
         run: mvn -B -ntp clean verify
       - name: Check browser JavaScript
         run: node --check src/main/resources/static/app.js
+      - name: Check local environment loader
+        shell: pwsh
+        run: ./scripts/test-env.ps1

@@ -85,3 +85,11 @@ java -jar target/ops-pilot-1.0.0.jar
 DeepSeek 官方非思考模式示例：将 BASE_URL 设为 https://api.deepseek.com，MODEL 设为 deepseek-flash，EXTRA_BODY_JSON 设为 {"thinking":{"type":"disabled"}}。供应商参数由环境变量 AGENT_EXTRA_BODY_JSON 注入，不能覆盖 model/messages/tools/stream/api_key。模型名称和权限以供应商控制台为准，不同供应商的 API Key 不能混用。
 
 参考：[千问 Function Calling](https://help.aliyun.com/zh/model-studio/qwen-function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。这些是配置建议，尚未用真实供应商密钥验证。
+
+## 本地文件配置（Windows）
+
+将 .env.local.example 复制为 .env.local，在本机填入 API Key 和接口地址。运行 scripts/start.ps1 会自动读取它，不需要额外安装 dotenv，也不会执行配置中的命令。支持四个 AGENT_* 变量；非空文件值覆盖当前进程环境变量，空值保留已有环境。不要在值后添加行尾注释。
+
+.env.local 已被 Git 忽略；模板文件可以提交。忽略提交不等于加密，文件仍由本机用户读取。通过 java -jar 或 IDEA 直接启动时，脚本不会运行，应在启动配置中设置对应环境变量。
+
+修改配置后重新运行 scripts/stop.ps1 和 scripts/start.ps1。勿将真实 Key 写进 application.yml、模板文件或提交记录。

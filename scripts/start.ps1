@@ -1,6 +1,7 @@
 param([int]$Port = 8080)
 $ErrorActionPreference = 'Stop'
 $projectDir = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'load-env.ps1') -Path (Join-Path $projectDir '.env.local')
 $jarPath = Join-Path $projectDir 'target\ops-pilot-1.0.0.jar'
 $dataDir = Join-Path $projectDir 'data'
 if (-not (Test-Path -LiteralPath $jarPath)) { throw '请先在项目根目录运行 mvn -B -ntp verify' }
