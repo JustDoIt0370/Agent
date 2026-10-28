@@ -11,10 +11,12 @@ public class ToolExecutor {
     private final LabService lab;
     private final Runbooks runbooks;
     private final ObjectMapper json;
-    public ToolExecutor(LabService lab, Runbooks runbooks, ObjectMapper json) { this.lab = lab; this.runbooks = runbooks; this.json = json; }
+    private final dev.portfolio.opspilot.lab.JvmInspector jvm;
+    public ToolExecutor(LabService lab, Runbooks runbooks, ObjectMapper json, dev.portfolio.opspilot.lab.JvmInspector jvm) { this.lab = lab; this.runbooks = runbooks; this.json = json; this.jvm = jvm; }
     public JsonNode execute(String name, JsonNode args, String window, Instant since, List<Investigation.Evidence> evidence) {
         lab.requireWindow(window);
         Object result = switch (name) {
+            case "get_thread_dump" -> { keys(args); yield jvm.snapshot(); }
             case "get_metrics" -> { keys(args); yield lab.metrics(window, since); }
             case "query_logs" -> {
                 keys(args, "limit");

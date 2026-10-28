@@ -33,7 +33,8 @@ public class LabService {
     private record Observation(String windowId, Trace trace) {}
 
     private final HikariDataSource pool;
-    private final ScheduledExecutorService workers = Executors.newScheduledThreadPool(6);
+    private final AtomicInteger workerSequence = new AtomicInteger();
+    private final ScheduledExecutorService workers = Executors.newScheduledThreadPool(6, task -> new Thread(task, "checkout-worker-" + workerSequence.incrementAndGet()));
     private final ExecutorService partnerWorkers = new ThreadPoolExecutor(8, 8, 0L, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(32), new ThreadPoolExecutor.AbortPolicy());
     private final HttpServer partner;

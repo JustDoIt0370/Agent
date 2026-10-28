@@ -17,6 +17,8 @@ public class BaselineGateway implements ModelGateway {
         JsonNode metrics = data(evidence, "get_metrics");
         if (!has(evidence, "get_trace")) return call("get_trace", Map.of("traceId", metrics.path("traceIds").get(0).asText()), "抽取耗时最高的请求，定位时间花在哪一段");
         String code = classify(metrics, data(evidence, "get_trace"));
+        if (code.equals("POOL_EXHAUSTION") && !has(evidence, "get_thread_dump"))
+            return call("get_thread_dump", Map.of(), "采集当前 JVM 线程栈，辅助核对连接等待");
         if (metrics.path("errors").asInt() > 0 && !has(evidence, "query_logs"))
             return call("query_logs", Map.of("limit", 12), "用错误日志交叉核对调用链中的异常");
         if (!code.equals("HEALTHY") && !has(evidence, "get_recent_changes"))

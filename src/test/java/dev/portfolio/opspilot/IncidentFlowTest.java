@@ -21,6 +21,7 @@ class IncidentFlowTest {
      assertThat(run.status()).withFailMessage("%s", run.error()).isEqualTo("COMPLETED");
      assertThat(run.diagnosis().causeCode()).isEqualTo(scenario.name());
      assertThat(run.evidence()).hasSizeGreaterThanOrEqualTo(3);
+     if(scenario==LabService.Scenario.POOL_EXHAUSTION) assertThat(run.evidence()).anyMatch(e->e.tool().equals("get_thread_dump") && e.data().path("threads").size()>0);
      if(scenario==LabService.Scenario.HEALTHY) continue;
      var receipt=ops.approve(run.id(),state.windowId());
      assertThat(ops.approve(run.id(),state.windowId()).id()).isEqualTo(receipt.id());

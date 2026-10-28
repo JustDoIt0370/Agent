@@ -115,7 +115,7 @@ public class AgentEngine {
     private static Investigation.Step step(List<Investigation.Step> steps, String kind, String title, String tool, long duration, String evidence, String detail) {
         return new Investigation.Step(steps.size() + 1, kind, title, tool, Instant.now(), duration, evidence, detail);
     }
-    private static String title(String tool) { return switch (tool) { case "get_metrics" -> "读取服务指标"; case "query_logs" -> "交叉核对错误日志"; case "get_trace" -> "定位调用链耗时"; case "get_recent_changes" -> "检查最近配置变更"; case "search_runbooks" -> "检索版本化 Runbook"; default -> tool; }; }
+    private static String title(String tool) { return switch (tool) { case "get_thread_dump" -> "采集 JVM 线程与内存快照"; case "get_metrics" -> "读取服务指标"; case "query_logs" -> "交叉核对错误日志"; case "get_trace" -> "定位调用链耗时"; case "get_recent_changes" -> "检查最近配置变更"; case "search_runbooks" -> "检索版本化 Runbook"; default -> tool; }; }
     private static String safe(String s, int limit) { return s == null ? "未知错误" : s.substring(0, Math.min(s.length(), limit)); }
     private static long elapsed(long start) { return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start); }
     @PreDestroy void close() { modelWorkers.shutdownNow(); }

@@ -18,7 +18,15 @@ public class ApiController {
     private final LabService lab;
     private final AgentSettings settings;
     private final Runbooks runbooks;
-    public ApiController(OpsService ops, LabService lab, AgentSettings settings, Runbooks runbooks) { this.ops = ops; this.lab = lab; this.settings = settings; this.runbooks = runbooks; }
+    private final dev.portfolio.opspilot.lab.JvmInspector jvm;
+    private final ReportExporter exporter;
+    public ApiController(OpsService ops, LabService lab, AgentSettings settings, Runbooks runbooks, dev.portfolio.opspilot.lab.JvmInspector jvm, ReportExporter exporter) { this.jvm=jvm; this.exporter=exporter; this.ops = ops; this.lab = lab; this.settings = settings; this.runbooks = runbooks; }
+    @GetMapping("/jvm") public dev.portfolio.opspilot.lab.JvmInspector.Snapshot jvm() { return jvm.snapshot(); }
+    @GetMapping("/investigations/{id}/report") public org.springframework.http.ResponseEntity<byte[]> report(@PathVariable String id) {
+        var content=exporter.markdown(ops.investigation(id),ops.approval(id));
+        return org.springframework.http.ResponseEntity.ok().header("Content-Disposition", "attachment; filename=opspilot-report.md")
+            .contentType(org.springframework.http.MediaType.parseMediaType("text/markdown;charset=UTF-8")).body(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
     @GetMapping("/overview") public Map<String, Object> overview() {
         return Map.of("name", "OpsPilot", "version", "1.0.0", "service", lab.state(), "busy", ops.busy(),
                 "modelAvailable", settings.liveAvailable(), "model", settings.model(), "limits", Map.of("rounds", settings.maxRounds(), "toolCalls", settings.maxToolCalls(), "timeoutSeconds", settings.timeoutSeconds()));

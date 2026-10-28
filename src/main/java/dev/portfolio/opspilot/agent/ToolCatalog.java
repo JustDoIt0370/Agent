@@ -7,6 +7,7 @@ import java.util.List;
 public final class ToolCatalog {
     private ToolCatalog() {}
     public static final List<ToolCallback> TOOLS = List.of(
+        definition("get_thread_dump", "读取当前 JVM 的堆内存、线程状态、死锁检测和至多 20 个线程的有限栈帧。包含工作台与实验室；瞬时 WAITING 不等于死锁。排查线程或连接等待时使用。", "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"),
         definition("get_metrics", "查询当前授权故障窗口的真实请求指标、连接池状态和可查询 traceId。请首先调用。", "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"),
         definition("query_logs", "查询当前窗口最近的请求日志，返回实际错误代码及 traceId。", "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":20}},\"required\":[\"limit\"],\"additionalProperties\":false}"),
         definition("get_trace", "根据已观察到的 traceId 查询 JDBC、连接等待和下游 HTTP span。", "{\"type\":\"object\",\"properties\":{\"traceId\":{\"type\":\"string\"}},\"required\":[\"traceId\"],\"additionalProperties\":false}"),
