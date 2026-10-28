@@ -4,7 +4,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 let overview, selected, current, approval, books = [], signature = '', working = false;
 const names = {HEALTHY:'健康',SLOW_SQL:'SQL 延迟',POOL_EXHAUSTION:'连接池耗尽',DOWNSTREAM_TIMEOUT:'下游超时',UNKNOWN:'证据不足'};
 async function api(path, body) { const r = await fetch('/api'+path, body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const data = await r.json(); if(!r.ok) throw new Error(data.error || '请求失败'); return data; }
-function view(name) { for(const id of ['console','books','eval','jvm']) $(id).hidden = id !== name; if(name==='jvm') loadJvm().catch(e=>$('notice').textContent=e.message); }
+function view(name) { for(const id of ['console','books','eval','jvm','model']) $(id).hidden = id !== name; if(name==='model') loadModel().catch(console.error); if(name==='jvm') loadJvm().catch(e=>$('notice').textContent=e.message); }
 async function action(fn) { if(working) return; working=true; $('notice').textContent=''; try { await fn(); } catch(e) { $('notice').textContent=e.message; } finally { working=false; await refresh().catch(()=>{}); } }
 function mode() { return $('mode').value; }
 async function diagnose() { const r=await api('/investigations',{mode:mode(),question:$('question').value}); selected=r.id; signature=''; view('console'); }
@@ -44,3 +44,14 @@ async function loadJvm() {
  $('jvmData').innerHTML='<div class="metrics">'+[['堆使用',(j.heapUsedBytes/1048576).toFixed(1)+' MB'],['存活线程',j.liveThreads],['检测到死锁',j.deadlockedThreadIds.length],['运行时间',Math.floor(j.uptimeMs/1000)+' s']].map(v=>'<div class="metric"><small>'+v[0]+'</small><strong>'+v[1]+'</strong></div>').join('')+'</div><div class="panel"><p>'+esc(j.scope)+'</p><p class="muted">采样时间 '+esc(j.collectedAt)+' · 线程状态 '+esc(JSON.stringify(j.states))+' · '+(j.truncated?'仅显示优先选取的 20 个线程':'已显示全部采样线程')+'</p>'+j.threads.map(t=>'<details><summary>'+esc(t.name)+' · '+esc(t.state)+'</summary><pre>'+esc('等待锁：'+(t.lockName||'无')+'\n锁持有者：'+(t.lockOwner||'无')+'\n'+t.stack.join('\n'))+'</pre></details>').join('')+'</div>';
 }
 $('sampleJvm').onclick=()=>action(loadJvm);
+
+async function loadModel(){
+ const m=await api('/model/status');
+ $('modelData').innerHTML='<p>配置状态：'+(m.configured?'已配置密钥（尚不代表已验证）':'未配置密钥')+'</p><p>模型：'+esc(m.model)+' · 服务主机：'+esc(m.endpointHost)+'</p><p class="muted">'+esc(m.protocol)+'</p>';
+ if(m.lastCheck) $('modelResult').textContent=m.lastCheck.status+' · '+m.lastCheck.message;
+}
+$('checkModel').onclick=()=>action(async()=>{
+ $('checkModel').disabled=true;$('modelResult').textContent='正在检测，最多等待 45 秒……';
+ try{const r=await api('/model/check',{});$('modelResult').textContent=r.status+' · '+r.message+' · '+r.durationMs+'ms · '+r.tokens+' tokens';}
+ finally{$('checkModel').disabled=false;}
+});

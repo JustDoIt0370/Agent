@@ -20,6 +20,9 @@ public class ApiController {
     private final Runbooks runbooks;
     private final dev.portfolio.opspilot.lab.JvmInspector jvm;
     private final ReportExporter exporter;
+    @org.springframework.beans.factory.annotation.Autowired private ModelConnection connection;
+    @GetMapping("/model/status") public ModelConnection.Status modelStatus(){return connection.status();}
+    @PostMapping("/model/check") public ModelConnection.Result modelCheck(){return connection.check();}
     public ApiController(OpsService ops, LabService lab, AgentSettings settings, Runbooks runbooks, dev.portfolio.opspilot.lab.JvmInspector jvm, ReportExporter exporter) { this.jvm=jvm; this.exporter=exporter; this.ops = ops; this.lab = lab; this.settings = settings; this.runbooks = runbooks; }
     @GetMapping("/jvm") public dev.portfolio.opspilot.lab.JvmInspector.Snapshot jvm() { return jvm.snapshot(); }
     @GetMapping("/investigations/{id}/report") public org.springframework.http.ResponseEntity<byte[]> report(@PathVariable String id) {

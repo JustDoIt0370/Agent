@@ -65,3 +65,23 @@ JVM 观测页读取当前进程真实的线程状态、锁持有者、堆使用�
 证据面板提供 Markdown 报告下载，包含调查模式、窗口、结论、证据、Runbook、风险、审批和恢复记录。导出不会调用模型或执行修复。
 
 OpsPilot = Operations + Pilot，即运维排查领航员。模型模式下，Agent 根据工具观察动态选择下一步；Java 后端承担执行边界、预算、存储和人工审批。规则模式用于验证工程闭环，不代表模型自主诊断能力。
+
+## 模型接入检测
+
+“模型接入”页显示密钥是否存在（不会显示密钥）、模型名和服务主机。手动检测最多发起两次真实模型请求，验证工具 JSON 和 tool_call_id 多轮回传；只发送模拟数据，不执行实验室工具。检测可能收费，30 秒内重复检测复用结果。通过不代表诊断准确率，通过后还应运行 MODEL 四场景评测。
+
+当前适配器使用 OpenAI Chat Completions function calling，需要支持 tools、结构化参数及多轮 tool 消息的文本模型。无需 embedding 或多模态模型。推理模式的 reasoning_content 等供应商字段尚未适配，首次接入建议关闭思考模式。
+
+百炼 Qwen 示例（以账号实际可用的模型 ID、地域为准）：
+
+~~~powershell
+$env:AGENT_API_KEY = 'your-key'
+$env:AGENT_BASE_URL = 'https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode'
+$env:AGENT_MODEL = 'qwen-plus'
+$env:AGENT_EXTRA_BODY_JSON = '{"enable_thinking":false}'
+java -jar target/ops-pilot-1.0.0.jar
+~~~
+
+DeepSeek 官方非思考模式示例：将 BASE_URL 设为 https://api.deepseek.com，MODEL 设为 deepseek-flash，EXTRA_BODY_JSON 设为 {"thinking":{"type":"disabled"}}。供应商参数由环境变量 AGENT_EXTRA_BODY_JSON 注入，不能覆盖 model/messages/tools/stream/api_key。模型名称和权限以供应商控制台为准，不同供应商的 API Key 不能混用。
+
+参考：[千问 Function Calling](https://help.aliyun.com/zh/model-studio/qwen-function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。这些是配置建议，尚未用真实供应商密钥验证。

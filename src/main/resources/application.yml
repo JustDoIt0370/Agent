@@ -25,6 +25,7 @@ agent:
   api-key: ${AGENT_API_KEY:}
   base-url: ${AGENT_BASE_URL:https://api.openai.com}
   model: ${AGENT_MODEL:gpt-4.1-mini}
+  extra-body-json: '${AGENT_EXTRA_BODY_JSON:{}}'
   max-rounds: 8
   max-tool-calls: 12
   timeout-seconds: 60
