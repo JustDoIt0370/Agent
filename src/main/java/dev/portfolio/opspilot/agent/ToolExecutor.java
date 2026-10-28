@@ -13,22 +13,28 @@ public class ToolExecutor {
     private final ObjectMapper json;
     private final dev.portfolio.opspilot.lab.JvmInspector jvm;
     public ToolExecutor(LabService lab, Runbooks runbooks, ObjectMapper json, dev.portfolio.opspilot.lab.JvmInspector jvm) { this.lab = lab; this.runbooks = runbooks; this.json = json; this.jvm = jvm; }
-    public JsonNode execute(String name, JsonNode args, String window, Instant since, List<Investigation.Evidence> evidence) {
+    public JsonNode execute(String name, JsonNode args, String window, Instant since, List<Investigation.Evidence> evidence, Map<String, LabService.Trace> pinnedTraces) {
         lab.requireWindow(window);
         Object result = switch (name) {
             case "get_thread_dump" -> { keys(args); yield jvm.snapshot(); }
-            case "get_metrics" -> { keys(args); yield lab.metrics(window, since); }
+            case "get_metrics" -> {
+                keys(args); var metrics = lab.metrics(window, since);
+                for (String id : metrics.traceIds()) pinnedTraces.put(id, lab.trace(window, id));
+                yield metrics;
+            }
             case "query_logs" -> {
                 keys(args, "limit");
                 if (!args.path("limit").isInt() || args.get("limit").asInt() < 1 || args.get("limit").asInt() > 20) throw new IllegalArgumentException("limit 必须为 1–20 的整数");
-                yield lab.logs(window, args.get("limit").asInt());
+                var logs = lab.logs(window, args.get("limit").asInt());
+                for (var log : logs) pinnedTraces.put(log.traceId(), lab.trace(window, log.traceId()));
+                yield logs;
             }
             case "get_trace" -> {
                 keys(args, "traceId"); String traceId = text(args, "traceId", 64);
                 boolean seen = evidence.stream().anyMatch(e -> (e.tool().equals("get_metrics") && contains(e.data().path("traceIds"), traceId))
                         || (e.tool().equals("query_logs") && iterable(e.data()).stream().anyMatch(log -> log.path("traceId").asText().equals(traceId))));
                 if (!seen) throw new IllegalArgumentException("traceId 必须来自本次查询返回的指标或日志");
-                yield lab.trace(window, traceId);
+                yield pinnedTraces.containsKey(traceId) ? pinnedTraces.get(traceId) : lab.trace(window, traceId);
             }
             case "get_recent_changes" -> { keys(args); yield lab.changes(window); }
             case "search_runbooks" -> { keys(args, "query"); yield runbooks.search(text(args, "query", 200)); }
@@ -49,10 +55,12 @@ public class ToolExecutor {
             if (!id.isTextual() || !unique.add(id.asText())) throw new IllegalArgumentException("证据引用不能重复");
             cited.add(evidence.stream().filter(e -> e.id().equals(id.asText())).findFirst().orElseThrow(() -> new IllegalArgumentException("引用了不存在的证据")));
         }
-        if (cited.stream().noneMatch(e -> e.tool().equals("get_metrics") && e.data().path("samples").asInt() >= 6)
-                || cited.stream().noneMatch(e -> e.tool().equals("query_logs") || e.tool().equals("get_trace"))
-                || cited.stream().noneMatch(e -> e.tool().equals("search_runbooks") && iterable(e.data()).stream().anyMatch(b -> b.path("id").asText().equals(bookId))))
-            throw new IllegalArgumentException("需引用有效指标、日志或调用链，以及已检索到的 Runbook");
+        if (cited.stream().noneMatch(e -> e.tool().equals("get_metrics") && e.data().path("samples").asInt() >= 6))
+            throw new IllegalArgumentException("evidenceIds 必须包含有效 get_metrics 的证据 ID");
+        if (cited.stream().noneMatch(e -> e.tool().equals("query_logs") || e.tool().equals("get_trace")))
+            throw new IllegalArgumentException("evidenceIds 必须包含 query_logs 或 get_trace 的证据 ID");
+        if (cited.stream().noneMatch(e -> e.tool().equals("search_runbooks") && iterable(e.data()).stream().anyMatch(b -> b.path("id").asText().equals(bookId))))
+            throw new IllegalArgumentException("evidenceIds 必须包含 search_runbooks 返回的证据 ID，并选择其中存在的 runbookId；Runbook 编号不是证据 ID");
         var book = runbooks.get(bookId);
         if (!book.causeCode().equals(code) || !book.actionKey().equals(action)) throw new IllegalArgumentException("诊断分类和修复动作必须符合所选 Runbook");
         return new Investigation.Diagnosis(code, summary, confidence.asDouble(), iterable(ids).stream().map(JsonNode::asText).toList(), bookId, action);
