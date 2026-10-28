@@ -9,10 +9,10 @@ foreach ($line in Get-Content -LiteralPath $Path -Encoding utf8) {
     $lineNumber++
     $text = $line.Trim()
     if (-not $text -or $text.StartsWith('#')) { continue }
-    if ($text -notmatch '^([A-Z_]+)\s*=(.*)$') { throw "本地配置第 $lineNumber 行格式错误，应为 NAME=value。" }
+    if ($text -notmatch '^([A-Z_]+)\s*=(.*)$') { throw "Invalid local configuration at line $lineNumber. Expected NAME=value." }
     $name = $Matches[1]
     $value = $Matches[2].Trim()
-    if ($name -notin $allowed -or $seen.ContainsKey($name)) { throw "本地配置第 $lineNumber 行包含不支持或重复的变量名。" }
+    if ($name -notin $allowed -or $seen.ContainsKey($name)) { throw "Unsupported or duplicate variable at local configuration line $lineNumber." }
     $seen[$name] = $true
     if ($value.Length -ge 2 -and (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'")))) {
         $value = $value.Substring(1, $value.Length - 2)

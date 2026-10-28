@@ -4,9 +4,9 @@ $projectDir = Split-Path -Parent $PSScriptRoot
 & (Join-Path $PSScriptRoot 'load-env.ps1') -Path (Join-Path $projectDir '.env.local')
 $jarPath = Join-Path $projectDir 'target\ops-pilot-1.0.0.jar'
 $dataDir = Join-Path $projectDir 'data'
-if (-not (Test-Path -LiteralPath $jarPath)) { throw '请先在项目根目录运行 mvn -B -ntp verify' }
+if (-not (Test-Path -LiteralPath $jarPath)) { throw 'Build first: mvn -B -ntp verify' }
 if (Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue) {
-    throw "端口 $Port 已被占用，请先停止已有服务，或使用 -Port 指定其他端口。"
+    throw "Port $Port is in use. Stop the service first or choose another -Port."
 }
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 $launchOptions = @{
@@ -22,14 +22,14 @@ $process = Start-Process @launchOptions
 $process.Id | Set-Content -LiteralPath (Join-Path $dataDir "server-$Port.pid")
 $ready = $false
 for ($attempt = 0; $attempt -lt 50; $attempt++) {
-    if ($process.HasExited) { throw "服务启动失败，请查看 data\server-$Port.log" }
+    if ($process.HasExited) { throw "Startup failed. Check data\server-$Port.log and data\server-$Port.err.log" }
     try {
         $health = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/actuator/health" -TimeoutSec 1
         if ($health.status -eq 'UP') { $ready = $true; break }
     } catch {}
     Start-Sleep -Milliseconds 300
 }
-if (-not $ready) { throw "服务未在预期时间内就绪；进程 $($process.Id) 仍可通过 scripts\stop.ps1 停止。" }
+if (-not $ready) { throw "Startup timed out. Check the server logs; use scripts\stop.ps1 to stop PID $($process.Id)." }
 Write-Output "OpsPilot: http://127.0.0.1:$Port"
 Write-Output "PID: $($process.Id)"
 Write-Output "Stop: .\scripts\stop.ps1 -Port $Port"

@@ -30,4 +30,25 @@ jobs:
         run: node --check src/main/resources/static/app.js
       - name: Check local environment loader
         shell: pwsh
-        run: ./scripts/test-env.ps1
+        run: ./scripts/test-compat.ps1
+  windows-scripts:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build runnable service
+        run: mvn -B -ntp -DskipTests package
+      - name: Windows PowerShell 5.1 compatibility and lifecycle
+        shell: powershell
+        run: |
+          ./scripts/test-compat.ps1
+          try { ./scripts/start.ps1 -Port 18080 } finally { ./scripts/stop.ps1 -Port 18080 }
+      - name: PowerShell 7 compatibility
+        shell: pwsh
+        run: ./scripts/test-compat.ps1

@@ -93,3 +93,9 @@ DeepSeek 官方非思考模式示例：将 BASE_URL 设为 https://api.deepseek.
 .env.local 已被 Git 忽略；模板文件可以提交。忽略提交不等于加密，文件仍由本机用户读取。通过 java -jar 或 IDEA 直接启动时，脚本不会运行，应在启动配置中设置对应环境变量。
 
 修改配置后重新运行 scripts/stop.ps1 和 scripts/start.ps1。勿将真实 Key 写进 application.yml、模板文件或提交记录。
+
+### Windows PowerShell 兼容性
+
+scripts/*.ps1 使用 ASCII 编码，兼容 Windows PowerShell 5.1 与 PowerShell 7，避免 5.1 将无 BOM 的 UTF-8 中文误读为系统代码页。真实 .env.local 明确按 UTF-8 读取。scripts/test-compat.ps1 检查所有脚本编码、语法和配置解析，Windows CI 额外验证启动与停止。
+
+若当前窗口禁止脚本运行，可在该窗口执行 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned；仅对当前会话生效。
